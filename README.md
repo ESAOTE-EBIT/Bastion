@@ -40,12 +40,13 @@ Importare ova secondo la procedura guidata, fino alla schermata in cui, tra le a
 Questo campo contiene i paramentri cloud-init in formato base64. Personalizzaere i parametri del file cloud-init.yml usando il template presente in questo repository.
 
 Generare la versione base64 del file preparato:
+
 _Linux_: ``` base64 -w0 userdata.yaml > userdata.b64 ```
 _Windows_: ``` certutil -encode metadata.yaml metadata.b64 ```
 
 Inserire il valore generato nel campo _userdata_ e completare il deploy del server.
 
-[Inserire schermate di esempio]
+**Inserire schermate di esempio**
 
 ### Setup ambiente
 Avviare il server Bastion creato e configurare semaphoneUI
