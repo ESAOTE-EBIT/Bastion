@@ -1,0 +1,206 @@
+{
+  "environments": [
+    {
+      "env": "{}",
+      "json": "{}",
+      "name": "ebit"
+    },
+    {
+      "env": "{}",
+      "json": "{}",
+      "name": "Empty"
+    }
+  ],
+  "integration_aliases": [
+    "ov2z54ve124bchd1"
+  ],
+  "integrations": [],
+  "inventories": [
+    {
+      "inventory": "inventory/prod.ini",
+      "name": "prod.ini",
+      "ssh_key": "ebit_key",
+      "type": "file"
+    }
+  ],
+  "keys": [
+    {
+      "name": "ubuntu_template_vm_password",
+      "owner": "variable",
+      "type": "string"
+    },
+    {
+      "name": "ebit_key",
+      "owner": "",
+      "type": "ssh"
+    },
+    {
+      "name": "None",
+      "owner": "",
+      "type": "none"
+    }
+  ],
+  "meta": {
+    "alert": false,
+    "max_parallel_tasks": 3,
+    "name": "Laboratorio1",
+    "type": ""
+  },
+  "repositories": [
+    {
+      "git_branch": "main",
+      "git_url": "git@github.com:ESAOTE-EBIT/Laboratorio1.git",
+      "name": "Laboratorio1",
+      "ssh_key": "ebit_key"
+    }
+  ],
+  "schedules": [],
+  "secret_storages": [],
+  "templates": [
+    {
+      "allow_override_args_in_task": false,
+      "allow_override_branch_in_task": false,
+      "allow_parallel_tasks": false,
+      "app": "ansible",
+      "arguments": "[]",
+      "autorun": false,
+      "environment": "ebit",
+      "inventory": "prod.ini",
+      "name": "01_template_ubuntu_vm.yml",
+      "playbook": "ansible_zefiro/playbooks/01_template_ubuntu_vm.yml",
+      "repository": "Laboratorio1",
+      "suppress_success_alerts": false,
+      "survey_vars": [],
+      "task_params": {},
+      "type": "",
+      "vaults": []
+    },
+    {
+      "allow_override_args_in_task": false,
+      "allow_override_branch_in_task": false,
+      "allow_parallel_tasks": false,
+      "app": "ansible",
+      "arguments": "[]",
+      "autorun": false,
+      "environment": "ebit",
+      "inventory": "prod.ini",
+      "name": "02_create_vm.yml",
+      "playbook": "ansible_zefiro/playbooks/02_create_vm.yml",
+      "repository": "Laboratorio1",
+      "suppress_success_alerts": false,
+      "survey_vars": [],
+      "task_params": {},
+      "type": "",
+      "vaults": []
+    },
+    {
+      "allow_override_args_in_task": false,
+      "allow_override_branch_in_task": false,
+      "allow_parallel_tasks": false,
+      "app": "ansible",
+      "arguments": "[]",
+      "autorun": false,
+      "environment": "ebit",
+      "inventory": "prod.ini",
+      "name": "03_setup_haproxy.yml",
+      "playbook": "ansible_zefiro/playbooks/03_setup_haproxy.yml",
+      "repository": "Laboratorio1",
+      "suppress_success_alerts": false,
+      "survey_vars": [],
+      "task_params": {},
+      "type": "",
+      "vaults": []
+    },
+    {
+      "allow_override_args_in_task": false,
+      "allow_override_branch_in_task": false,
+      "allow_parallel_tasks": false,
+      "app": "ansible",
+      "arguments": "[]",
+      "autorun": false,
+      "environment": "ebit",
+      "inventory": "prod.ini",
+      "name": "04_install_kubernetes.yml",
+      "playbook": "ansible_zefiro/playbooks/04_install_kubernetes.yml",
+      "repository": "Laboratorio1",
+      "suppress_success_alerts": false,
+      "survey_vars": [],
+      "task_params": {},
+      "type": "",
+      "vaults": []
+    },
+    {
+      "allow_override_args_in_task": false,
+      "allow_override_branch_in_task": false,
+      "allow_parallel_tasks": false,
+      "app": "ansible",
+      "arguments": "[]",
+      "autorun": false,
+      "environment": "ebit",
+      "inventory": "prod.ini",
+      "name": "05_install_helm.yml",
+      "playbook": "ansible_zefiro/playbooks/05_install_helm.yml",
+      "repository": "Laboratorio1",
+      "suppress_success_alerts": false,
+      "survey_vars": [],
+      "task_params": {},
+      "type": "",
+      "vaults": []
+    },
+    {
+      "allow_override_args_in_task": false,
+      "allow_override_branch_in_task": false,
+      "allow_parallel_tasks": false,
+      "app": "ansible",
+      "arguments": "[]",
+      "autorun": false,
+      "environment": "ebit",
+      "inventory": "prod.ini",
+      "name": "06_install_metallb.yml",
+      "playbook": "ansible_zefiro/playbooks/06_install_metallb.yml",
+      "repository": "Laboratorio1",
+      "suppress_success_alerts": false,
+      "survey_vars": [],
+      "task_params": {},
+      "type": "",
+      "vaults": []
+    },
+    {
+      "allow_override_args_in_task": false,
+      "allow_override_branch_in_task": false,
+      "allow_parallel_tasks": false,
+      "app": "ansible",
+      "arguments": "[]",
+      "autorun": false,
+      "environment": "ebit",
+      "inventory": "prod.ini",
+      "name": "07_ebit_custom.yml",
+      "playbook": "ansible_zefiro/playbooks/07_ebit_custom.yml",
+      "repository": "Laboratorio1",
+      "suppress_success_alerts": false,
+      "survey_vars": [],
+      "task_params": {},
+      "type": "",
+      "vaults": []
+    },
+    {
+      "allow_override_args_in_task": false,
+      "allow_override_branch_in_task": false,
+      "allow_parallel_tasks": false,
+      "app": "ansible",
+      "arguments": "[]",
+      "autorun": false,
+      "environment": "Empty",
+      "inventory": "prod.ini",
+      "name": "hello_world.yml",
+      "playbook": "ansible_zefiro/playbooks/hello_world.yml",
+      "repository": "Laboratorio1",
+      "suppress_success_alerts": false,
+      "survey_vars": [],
+      "task_params": {},
+      "type": "",
+      "vaults": []
+    }
+  ],
+  "views": []
+}

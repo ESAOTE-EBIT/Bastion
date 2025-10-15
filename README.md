@@ -49,8 +49,28 @@ Inserire il valore generato nel campo _userdata_ e completare il deploy del serv
 **Inserire schermate di esempio**
 
 ### Setup ambiente
-- Avviare il server Bastion creato e configurare semaphoneUI
-- Copia della chiave ssh sui server proxmox
-- Importazione json di semaphoreUI
-- Modifica del file presente e import (come?)
+
+#### Installazione SemaphoreUI
+Collegarsi in ssh al server bastion (o da console) e dare i comandi:
+```bash
+sudo su -
+
+apt update; apt install -y curl
+ export SECURE_PASS=tuaPasswordSicura
+bash <(curl -s https://raw.githubusercontent.com/ESAOTE-EBIT/Bastion/refs/heads/main/02_semaphore_ui.sh)"
+```
+
+#### Configurazione SemaphoreUI
+1. Collegarsi all'interfaccia web di semaphore: http://bastion:3000/
+2. Login con utente (ebit) e password usata nei passi precedenti.
+3. Importare il json che si trova in questo repository (Ripristina progetto nel menù)
+4. Modificare il nome del progetto da: Cruscotto -> Impostazioni
+5. Modificare il valore della variabile secret con la password da usare nelle VM: Gruppi di variabili -> ebit -> Modifica -> Secrets ->  ubuntu_template_vm_password
+6. Modificare il puntamento al repository GitHub: Repository
+7. Modificare la chiave ssh per accesso a Github (usare quella generata nella creazione del server): Negozio di chiavi -> ebit_key (inserire la chiave ssh privata)
+8. Clonare/creare un repository Github che conterrà i dati variabili della nostra installazione (ed: Laboratorio1)
+9. Su Github inserire la chiave ssh pubblica (generata durante creazione vm bastion) tra le Deploy keys del repository relativo all'installazione
+10. Procedere al lancio dei Playbook ansible.
+
+
 
