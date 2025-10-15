@@ -1,0 +1,32 @@
+#cloud-config
+hostname: bastion
+users:
+  - name: ebit
+    sudo: ALL=(ALL) NOPASSWD:ALL
+    groups: users, admin
+    shell: /bin/bash
+    ssh-authorized-keys:
+      - ssh-ed25519 CHIAVE_SSH_PUBBLICA
+    passwd: PASSWORD_UTENTE_SHA512
+    lock_passwd: false
+packages:
+  - htop
+  - curl
+  - tmux
+  - open-vm-tools
+write_files:
+  - path: /home/ebit/welcome.txt
+    content: |
+      Benvenuto ebit
+runcmd:
+  - chown ebit:ebit /home/ebit/welcome.txt
+  - echo "Configurazione completata"
+network:
+  version: 2
+  ethernets:
+    ens33:
+      dhcp4: false
+      addresses: [192.168.1.100/24]
+      gateway4: 192.168.1.1
+      nameservers:
+        addresses: [8.8.8.8]
