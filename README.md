@@ -49,7 +49,8 @@ Inserire il valore generato nel campo _userdata_ e completare il deploy del serv
 **Inserire schermate di esempio**
 
 ### Setup ambiente
-Avviare il server Bastion creato e configurare semaphoneUI
-Importazione json di esempio
-Modifica del file presente e import (come?)
+- Avviare il server Bastion creato e configurare semaphoneUI
+- Copia della chiave ssh sui server proxmox
+- Importazione json di semaphoreUI
+- Modifica del file presente e import (come?)
 
