@@ -41,8 +41,8 @@ Questo campo contiene i paramentri cloud-init in formato base64. Personalizzaere
 
 Generare la versione base64 del file preparato:
 
-_Linux_: ``` base64 -w0 userdata.yaml > userdata.b64 ```
-_Windows_: ``` certutil -encode metadata.yaml metadata.b64 ```
+_Linux_: ``` base64 -w0 userdata.yml > userdata.b64 ```
+_Windows_: ``` certutil -encode userdata.yml userdata.b64 ```
 
 Inserire il valore generato nel campo _userdata_ e completare il deploy del server.
 
