@@ -57,7 +57,7 @@ sudo su -
 
 apt update; apt install -y curl
  export SECURE_PASS=tuaPasswordSicura
-bash <(curl -s https://raw.githubusercontent.com/ESAOTE-EBIT/Bastion/refs/heads/main/02_semaphore_ui.sh)"
+bash <(curl -s https://raw.githubusercontent.com/ESAOTE-EBIT/Bastion/refs/heads/main/02_semaphore_ui.sh)
 ```
 
 #### Configurazione SemaphoreUI
