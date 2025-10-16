@@ -31,6 +31,8 @@ export LANG=it_IT.UTF-8
 export LANGUAGE=it_IT:it
 export LC_ALL=it_IT.UTF-8
 
+timedatectl set-timezone Europe/Rome
+
 DEBIAN_FRONTEND=noninteractive apt full-upgrade -yq
 DEBIAN_FRONTEND=noninteractive apt install -y ansible qemu-guest-agent vim curl sshpass openssh-server git tar xz-utils wget gnupg openssl vim sudo expect tmux tinyproxy
 
