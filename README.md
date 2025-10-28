@@ -38,6 +38,7 @@ Scaricare immagine ova di ubuntu LTS da qui: https://cloud-images.ubuntu.com/nob
 
 Importare il file ova secondo la procedura guidata, scegliendo dove posizionare il disco del serve, **NON accendere** la VM al termine della procedura.
 Adesso sarà necessario configurare cloud-init per la configurazione iniziale della VM:
+
 	1. Seleziona la VM → Modifica impostazioni.
 	2. Scorri in basso fino a Opzioni → Avanzate → Parametri di configurazione (Configuration Parameters).
 	3. Clicca Aggiungi riga e inserisci:
