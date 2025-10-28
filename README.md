@@ -75,14 +75,15 @@ bash <(curl -s https://raw.githubusercontent.com/ESAOTE-EBIT/Bastion/refs/heads/
 #### Configurazione SemaphoreUI
 1. Collegarsi all'interfaccia web di semaphore: http://bastion:3000/
 2. Login con utente (ebit) e password usata nei passi precedenti.
-3. Importare il json che si trova in questo repository (Ripristina progetto nel menù)
-4. Modificare il nome del progetto da: Cruscotto -> Impostazioni
-5. Modificare il valore della variabile secret con la password da usare nelle VM: Gruppi di variabili -> ebit -> Modifica -> Secrets ->  ubuntu_template_vm_password
-6. Modificare il puntamento al repository GitHub: Repository
-7. Modificare la chiave ssh per accesso a Github (usare quella generata nella creazione del server): Negozio di chiavi -> ebit_key (inserire la chiave ssh privata)
-8. Clonare/creare un repository Github che conterrà i dati variabili della nostra installazione (ed: Laboratorio1)
-9. Su Github inserire la chiave ssh pubblica (generata durante creazione vm bastion) tra le Deploy keys del repository relativo all'installazione
-10. Procedere al lancio dei Playbook ansible.
+3. Personalizzare il file (files/template_semaphore.json): modificare nomi, riferimenti, url gitlab, ecc. ecc.
+4. Importare il json che si trova in questo repository (files/template_semaphore.json) -> Ripristina progetto nel menù
+5. Modificare il nome del progetto da: Cruscotto -> Impostazioni
+6. Modificare il valore della variabile secret con la password da usare nelle VM: Gruppi di variabili -> ebit -> Modifica -> Secrets ->  ubuntu_template_vm_password
+7. Modificare il puntamento al repository GitHub: Repository
+8. Modificare la chiave ssh per accesso a Github (usare quella generata nella creazione del server): Negozio di chiavi -> ebit_key (inserire la chiave ssh privata)
+9. Clonare/creare un repository Github che conterrà i dati variabili della nostra installazione (es: Laboratorio1)
+10. Su Github inserire la chiave ssh pubblica (generata durante creazione vm bastion) tra le Deploy keys del repository relativo all'installazione (serve per l'accesso a github dal server bastion)
+11. Procedere al lancio dei Playbook ansible.
 
 
 
