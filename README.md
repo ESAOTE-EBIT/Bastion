@@ -41,6 +41,7 @@ Adesso sarà necessario configurare cloud-init per la configurazione iniziale de
 	1. Seleziona la VM → Modifica impostazioni.
 	2. Scorri in basso fino a Opzioni → Avanzate → Parametri di configurazione (Configuration Parameters).
 	3. Clicca Aggiungi riga e inserisci:
+	
 ```
 guestinfo.userdata.encoding = base64
 guestinfo.userdata = <contenuto base64 del file cloud-init userdata>
@@ -48,6 +49,7 @@ guestinfo.userdata = <contenuto base64 del file cloud-init userdata>
 guestinfo.metadata = <contenuto base64 del file cloud-init metadadata>
 guestinfo.metadata.encoding = base64
 ```
+
 Schermata di esempio:
 <img width="710" height="162" alt="image" src="https://github.com/user-attachments/assets/03c9e402-cd77-4825-9de3-93e903f4b07c" />
 
