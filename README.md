@@ -39,9 +39,9 @@ Scaricare immagine ova di ubuntu LTS da qui: https://cloud-images.ubuntu.com/nob
 Importare il file ova secondo la procedura guidata, scegliendo dove posizionare il disco del serve, **NON accendere** la VM al termine della procedura.
 Adesso sarà necessario configurare cloud-init per la configurazione iniziale della VM:
 
-	1. Seleziona la VM → Modifica impostazioni.
-	2. Scorri in basso fino a Opzioni → Avanzate → Parametri di configurazione (Configuration Parameters).
-	3. Clicca Aggiungi riga e inserisci:
+1. Seleziona la VM → Modifica impostazioni.
+2. Scorri in basso fino a Opzioni → Avanzate → Parametri di configurazione (Configuration Parameters).
+3. Clicca Aggiungi riga e inserisci:
 	
 ```
 guestinfo.userdata.encoding = base64
@@ -51,19 +51,14 @@ guestinfo.metadata = <contenuto base64 del file cloud-init metadadata>
 guestinfo.metadata.encoding = base64
 ```
 
-Schermata di esempio:
-<img width="710" height="162" alt="image" src="https://github.com/user-attachments/assets/03c9e402-cd77-4825-9de3-93e903f4b07c" />
-
-
-
 Generare la versione base64 del file preparato:
-
 _Linux_: ``` base64 -w0 userdata.yml > userdata.b64 ```
+
 _Windows_: ``` certutil -encode userdata.yml userdata.b64 ```
 
-Inserire il valore generato nel campo _userdata_ e completare il deploy del server.
-
 **Inserire schermate di esempio**
+
+Adesso è possibile accendere la VM.
 
 ### Setup ambiente
 
