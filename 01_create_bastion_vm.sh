@@ -19,10 +19,10 @@ SECURE_PASS=$password1
 # ==========================
 # Parametri di rete VM
 # ==========================
-read -rp "Indirizzo IP della VM (es. 10.31.0.4): " VM_IP
+read -rp "Indirizzo IP della VM (es. 192.168.0.1): " VM_IP
 read -rp "Subnet CIDR (solo numero, es. 24): " VM_SUBNET
-read -rp "Gateway (es. 10.31.0.254): " VM_GW
-read -rp "DNS (es. 10.31.8.121 oppure \"10.31.8.121 8.8.8.8\"): " VM_DNS
+read -rp "Gateway (es. 192.168.0.254): " VM_GW
+read -rp "DNS (es. 192.168.0.10 oppure \"192.168.0.10 8.8.8.8\"): " VM_DNS
  
 # ==========================
 # Bridge di rete
@@ -155,7 +155,7 @@ qm set $qm_id \
 qm resize $qm_id scsi0 5G
 qm start $qm_id
  
-rm -f "$OS_IMAGE"
+#rm -f "$OS_IMAGE"
  
 echo "Adesso è possibile collegarsi al server in ssh"
 echo "Utente: ebit"
