@@ -345,5 +345,6 @@ echo "  Tipo: Self-Signed"
 echo "  Chiave: /etc/nginx/certs/semaphore.key"
 echo "  Certificato: /etc/nginx/certs/semaphore.crt"
 echo
-echo "NOTA: Acceptare l'avviso del certificato self-signed nel browser"
+echo "NOTA: accettare l'avviso del certificato self-signed nel browser"
+echo "      In alternativa generare un certificato firmato da CA attendibile"
 echo
