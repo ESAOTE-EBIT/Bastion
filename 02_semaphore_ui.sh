@@ -1,7 +1,9 @@
 #!/bin/bash
 
-echo "Installazione semaphore UI, premi un tasto per continuare"
-read -r a
+echo "╔════════════════════════════════════════════════════════════════╗"
+echo "║      Installazione Ansible Semaphore UI + Nginx (SSL)         ║"
+echo "╚════════════════════════════════════════════════════════════════╝"
+echo
 
 # Deve essere eseguito come root
 if [ "$EUID" -ne 0 ]; then
@@ -9,7 +11,11 @@ if [ "$EUID" -ne 0 ]; then
   exit 1
 fi
 
-# === Richiesta SECURE_PASS ===
+# === CONFIGURAZIONE INIZIALE ===
+echo "=== CONFIGURAZIONE PARAMETRI ==="
+echo
+
+# --- Password Semaphore ---
 if [[ -z "${SECURE_PASS}" ]]; then
     read -srp "Inserisci password SECURE_PASS (min 8 caratteri): " SECURE_PASS
     echo
@@ -21,6 +27,52 @@ if [[ ${#SECURE_PASS} -lt 8 ]]; then
 fi
 
 SEMAPHORE_PASS="$SECURE_PASS"
+
+# --- Utente Semaphore ---
+read -rp "Utente Semaphore [ebit]: " SEMAPHORE_USER
+SEMAPHORE_USER=${SEMAPHORE_USER:-ebit}
+
+# --- Email Semaphore ---
+read -rp "Email amministratore [michele.agostinelli@Ebit.com]: " SEMAPHORE_EMAIL
+SEMAPHORE_EMAIL=${SEMAPHORE_EMAIL:-michele.agostinelli@Ebit.com}
+
+# --- Dominio/Hostname Nginx ---
+read -rp "Dominio per Nginx (es. semaphore.local, example.com) [semaphore.local]: " NGINX_DOMAIN
+NGINX_DOMAIN=${NGINX_DOMAIN:-semaphore.local}
+
+# --- Parametri SSL Certificate ---
+read -rp "Paese (C) [IT]: " CERT_COUNTRY
+CERT_COUNTRY=${CERT_COUNTRY:-IT}
+
+read -rp "Provincia/Stato (ST) [Genova]: " CERT_STATE
+CERT_STATE=${CERT_STATE:-Genova}
+
+read -rp "Città (L) [Genova]: " CERT_CITY
+CERT_CITY=${CERT_CITY:-Genova}
+
+read -rp "Organizzazione (O) [Ebit]: " CERT_ORG
+CERT_ORG=${CERT_ORG:-Ebit}
+
+# --- Riepilogo configurazione ---
+echo
+echo "╔════════════════════════════════════════════════════════════════╗"
+echo "║                    RIEPILOGO CONFIGURAZIONE                   ║"
+echo "╚════════════════════════════════════════════════════════════════╝"
+echo "Utente Semaphore:        $SEMAPHORE_USER"
+echo "Email Admin:             $SEMAPHORE_EMAIL"
+echo "Dominio Nginx:           $NGINX_DOMAIN"
+echo "Certificato SSL:"
+echo "  - Paese (C):           $CERT_COUNTRY"
+echo "  - Provincia (ST):      $CERT_STATE"
+echo "  - Città (L):           $CERT_CITY"
+echo "  - Organizzazione (O):  $CERT_ORG"
+echo
+read -rp "Continuo con questa configurazione? [s/N] " CONFIRM
+if [[ "$CONFIRM" != "s" && "$CONFIRM" != "S" ]]; then
+    echo "Installazione annullata."
+    exit 0
+fi
+echo
 
 # === Locale ===
 DEBIAN_FRONTEND=noninteractive apt update; apt install -y locales
@@ -35,7 +87,8 @@ timedatectl set-timezone Europe/Rome
 DEBIAN_FRONTEND=noninteractive apt full-upgrade -yq
 DEBIAN_FRONTEND=noninteractive apt install -y \
  ansible qemu-guest-agent vim curl sshpass openssh-server git \
- tar xz-utils wget gnupg openssl vim sudo expect tmux tinyproxy
+ tar xz-utils wget gnupg openssl vim sudo expect tmux tinyproxy \
+ nginx
 
 # Config Vim minimal
 cat <<EOF > /etc/vim/vimrc.local
@@ -94,11 +147,9 @@ curl -L -s https://api.github.com/repos/ansible-semaphore/semaphore/releases/lat
 | wget -qi -
 dpkg -i semaphore*.deb
 
-SEMAPHORE_USER="ebit"
-SEMAPHORE_EMAIL="michele.agostinelli@esaote.com"
 SEMAPHORE_PORT=3000
 SEMAPHORE_CONF="/etc/semaphore/config.json"
-SEMAPHORE_PLAYBOOKS="/home/ebit/playbooks"
+SEMAPHORE_PLAYBOOKS="/home/$SEMAPHORE_USER/playbooks"
 
 mkdir -p /etc/semaphore
 chown -R ${SEMAPHORE_USER}: /etc/semaphore
@@ -113,8 +164,8 @@ echo '{
   "dialect": "mysql",
   "port": "'"$SEMAPHORE_PORT"'",
   "cookie_hash": "'"$(openssl rand -base64 24)"'",
-  "cookie_encryption": "'"$(openssl.rand -base64 24)"'",
-  "access_key_encryption": "'"$(openssl.rand -base64 24)"'",
+  "cookie_encryption": "'"$(openssl rand -base64 24)"'",
+  "access_key_encryption": "'"$(openssl rand -base64 24)"'",
   "playbook_path": "'"$SEMAPHORE_PLAYBOOKS"'"
 }' > "$SEMAPHORE_CONF"
 
@@ -143,6 +194,95 @@ EOF
 
 systemctl daemon-reload
 systemctl enable --now semaphore.service
+
+# === NGINX con Certificato Self-Signed ===
+echo
+echo "Creazione certificato self-signed per nginx..."
+NGINX_CERT_DIR="/etc/nginx/certs"
+NGINX_KEY="$NGINX_CERT_DIR/semaphore.key"
+NGINX_CRT="$NGINX_CERT_DIR/semaphore.crt"
+
+mkdir -p "$NGINX_CERT_DIR"
+
+# Genera chiave privata e certificato self-signed
+openssl req -x509 -newkey rsa:4096 -keyout "$NGINX_KEY" -out "$NGINX_CRT" \
+  -days 365 -nodes \
+  -subj "/C=$CERT_COUNTRY/ST=$CERT_STATE/L=$CERT_CITY/O=$CERT_ORG/CN=$NGINX_DOMAIN"
+
+chmod 600 "$NGINX_KEY"
+chmod 644 "$NGINX_CRT"
+
+echo "✓ Certificato creato:"
+echo "  Chiave: $NGINX_KEY"
+echo "  Certificato: $NGINX_CRT"
+echo "  Dominio: $NGINX_DOMAIN"
+
+# Disabilita default site
+rm -f /etc/nginx/sites-enabled/default
+
+# Crea file di configurazione nginx reverse proxy per Semaphore UI
+cat <<'EOF' > /etc/nginx/sites-available/semaphore
+server {
+  listen 443 ssl;
+  server_name  NGINX_DOMAIN_PLACEHOLDER;
+  # add Strict-Transport-Security to prevent man in the middle attacks
+  add_header Strict-Transport-Security "max-age=31536000" always;
+  # SSL
+  ssl_certificate /etc/nginx/certs/semaphore.crt;
+  ssl_certificate_key /etc/nginx/certs/semaphore.key;
+  # Recommendations from 
+  # https://raymii.org/s/tutorials/Strong_SSL_Security_On_nginx.html
+  ssl_protocols TLSv1.1 TLSv1.2;
+  ssl_ciphers 'EECDH+AESGCM:EDH+AESGCM:AES256+EECDH:AES256+EDH';
+  ssl_prefer_server_ciphers on;
+  ssl_session_cache shared:SSL:10m;
+  # required to avoid HTTP 411: see Issue #1486 
+  # (https://github.com/docker/docker/issues/1486)
+  chunked_transfer_encoding on;
+  location / {
+    proxy_pass http://127.0.0.1:3000/;
+    proxy_set_header Host $http_host;
+    proxy_set_header X-Real-IP $remote_addr;
+    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+    
+    proxy_set_header X-Forwarded-Proto $scheme;
+    proxy_buffering off;
+    proxy_request_buffering off;
+  }
+  location /api/ws {
+    proxy_pass http://127.0.0.1:3000/api/ws;
+    proxy_http_version 1.1;
+    proxy_set_header Upgrade $http_upgrade;
+    proxy_set_header Connection "upgrade";
+    proxy_set_header Origin "";
+  }
+}
+EOF
+
+# Sostituisce il placeholder con il dominio reale
+sed -i "s/NGINX_DOMAIN_PLACEHOLDER/$NGINX_DOMAIN/g" /etc/nginx/sites-available/semaphore
+
+# Crea anche il redirect HTTP → HTTPS
+cat <<EOF > /etc/nginx/sites-available/semaphore-http
+server {
+    listen 80;
+    server_name $NGINX_DOMAIN;
+    return 301 https://\$server_name\$request_uri;
+}
+EOF
+
+# Abilita i siti
+ln -sf /etc/nginx/sites-available/semaphore /etc/nginx/sites-enabled/
+ln -sf /etc/nginx/sites-available/semaphore-http /etc/nginx/sites-enabled/
+
+# Test configurazione nginx
+if nginx -t; then
+    echo "✓ Configurazione nginx valida"
+    systemctl enable --now nginx
+else
+    echo "✗ Errore nella configurazione nginx - Verifica il file"
+    exit 1
+fi
 
 apt clean
 
@@ -191,5 +331,19 @@ for H in "${HOSTS[@]}"; do
 done
 
 echo
-echo "Installazione completata!"
-echo "Interfaccia Web di Semaphore sulla porta $SEMAPHORE_PORT"
+echo "╔════════════════════════════════════════════════════════════════╗"
+echo "║               INSTALLAZIONE COMPLETATA CON SUCCESSO!           ║"
+echo "╚════════════════════════════════════════════════════════════════╝"
+echo
+echo "Accesso a Semaphore UI:"
+echo "  URL: https://$NGINX_DOMAIN"
+echo "  Utente: $SEMAPHORE_USER"
+echo "  Email: $SEMAPHORE_EMAIL"
+echo
+echo "Certificato SSL:"
+echo "  Tipo: Self-Signed"
+echo "  Chiave: /etc/nginx/certs/semaphore.key"
+echo "  Certificato: /etc/nginx/certs/semaphore.crt"
+echo
+echo "⚠️  NOTA: Acceptare l'avviso del certificato self-signed nel browser"
+echo
