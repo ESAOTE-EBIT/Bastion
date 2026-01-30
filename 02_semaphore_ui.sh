@@ -33,8 +33,8 @@ read -rp "Utente Semaphore [ebit]: " SEMAPHORE_USER
 SEMAPHORE_USER=${SEMAPHORE_USER:-ebit}
 
 # --- Email Semaphore ---
-read -rp "Email amministratore [michele.agostinelli@Ebit.com]: " SEMAPHORE_EMAIL
-SEMAPHORE_EMAIL=${SEMAPHORE_EMAIL:-michele.agostinelli@Ebit.com}
+read -rp "Email amministratore [nome.cognome@esaote.com]: " SEMAPHORE_EMAIL
+SEMAPHORE_EMAIL=${SEMAPHORE_EMAIL:-nome.cognome@esaote.com}
 
 # --- Dominio/Hostname Nginx ---
 read -rp "Dominio per Nginx (es. semaphore.local, example.com) [semaphore.local]: " NGINX_DOMAIN
@@ -345,5 +345,5 @@ echo "  Tipo: Self-Signed"
 echo "  Chiave: /etc/nginx/certs/semaphore.key"
 echo "  Certificato: /etc/nginx/certs/semaphore.crt"
 echo
-echo "⚠️  NOTA: Acceptare l'avviso del certificato self-signed nel browser"
+echo "NOTA: Acceptare l'avviso del certificato self-signed nel browser"
 echo
