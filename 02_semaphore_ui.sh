@@ -1,7 +1,7 @@
 #!/bin/bash
 
 echo "╔════════════════════════════════════════════════════════════════╗"
-echo "║      Installazione Ansible Semaphore UI + Nginx (SSL)         ║"
+echo "║      Installazione/Aggiornamento Semaphore UI + Nginx (SSL)   ║"
 echo "╚════════════════════════════════════════════════════════════════╝"
 echo
 
@@ -88,7 +88,7 @@ DEBIAN_FRONTEND=noninteractive apt full-upgrade -yq
 DEBIAN_FRONTEND=noninteractive apt install -y \
  ansible qemu-guest-agent vim curl sshpass openssh-server git \
  tar xz-utils wget gnupg openssl vim sudo expect tmux tinyproxy \
- nginx
+ nginx mariadb-server
 
 # Config Vim minimal
 cat <<EOF > /etc/vim/vimrc.local
@@ -99,13 +99,22 @@ if has('mouse')
 endif
 EOF
 
-su - ebit -c "ansible-galaxy collection install community.general community.proxmox"
+# Creazione utente sistema se non esiste
+if ! id "$SEMAPHORE_USER" &>/dev/null; then
+    useradd -m -s /bin/bash "$SEMAPHORE_USER"
+fi
 
-DEBIAN_FRONTEND=noninteractive apt install -y mariadb-server
+su - "$SEMAPHORE_USER" -c "ansible-galaxy collection install community.general community.proxmox"
+
 systemctl enable --now mariadb
 
-# Configurazione MariaDB non-interattiva
-cat <<EOF > secure_mariadb.expect
+# === Configurazione MariaDB (Idempotente) ===
+echo "Verifica configurazione MariaDB..."
+
+# Controlla se possiamo accedere senza password (installazione fresca)
+if mysql -u root -e "status" >/dev/null 2>&1; then
+    echo "Configurazione sicura MariaDB in corso..."
+    cat <<EOF > secure_mariadb.expect
 #!/usr/bin/expect -f
 set timeout 10
 spawn mariadb-secure-installation
@@ -129,23 +138,36 @@ expect "Reload privilege tables now?"
 send "Y\r"
 expect eof
 EOF
+    chmod +x secure_mariadb.expect
+    ./secure_mariadb.expect
+    rm -f secure_mariadb.expect
+else
+    echo "MariaDB sembra già configurato (password root impostata). Salto secure installation."
+fi
 
-chmod +x secure_mariadb.expect
-./secure_mariadb.expect
-rm -f secure_mariadb.expect
+# Creazione DB e Utente (se non esistono)
+# Nota: usiamo -p$SECURE_PASS se necessario. Se fallisce, proviamo senza.
+MYSQL_CMD="mariadb -u root -p$SECURE_PASS"
+if ! $MYSQL_CMD -e "status" >/dev/null 2>&1; then
+    # Fallback: prova senza password (caso socket)
+    MYSQL_CMD="mariadb -u root"
+fi
 
-mariadb <<EOF
-CREATE DATABASE semaphore_db;
+$MYSQL_CMD <<EOF
+CREATE DATABASE IF NOT EXISTS semaphore_db;
 GRANT ALL PRIVILEGES ON semaphore_db.* TO semaphore_user@localhost IDENTIFIED BY '${SECURE_PASS}';
+FLUSH PRIVILEGES;
 EOF
 
-# Install Semaphore
+# === Installazione/Aggiornamento Semaphore ===
+echo "Download e installazione Semaphore..."
 curl -L -s https://api.github.com/repos/ansible-semaphore/semaphore/releases/latest \
 | grep "browser_download_url.*amd64.deb" \
 | cut -d : -f 2,3 \
 | tr -d \" \
 | wget -qi -
 dpkg -i semaphore*.deb
+rm -f semaphore*.deb
 
 SEMAPHORE_PORT=3000
 SEMAPHORE_CONF="/etc/semaphore/config.json"
@@ -154,26 +176,33 @@ SEMAPHORE_PLAYBOOKS="/home/$SEMAPHORE_USER/playbooks"
 mkdir -p /etc/semaphore
 chown -R ${SEMAPHORE_USER}: /etc/semaphore
 
-echo '{
-  "mysql": {
-    "host": "127.0.0.1:3306",
-    "user": "semaphore_user",
-    "pass": "'"$SECURE_PASS"'",
-    "name": "semaphore_db"
-  },
-  "dialect": "mysql",
-  "port": "'"$SEMAPHORE_PORT"'",
-  "cookie_hash": "'"$(openssl rand -base64 24)"'",
-  "cookie_encryption": "'"$(openssl rand -base64 24)"'",
-  "access_key_encryption": "'"$(openssl rand -base64 24)"'",
-  "playbook_path": "'"$SEMAPHORE_PLAYBOOKS"'"
-}' > "$SEMAPHORE_CONF"
+# Genera config SOLO se non esiste (per preservare chiavi crittografiche)
+if [[ ! -f "$SEMAPHORE_CONF" ]]; then
+    echo "Generazione nuova configurazione Semaphore..."
+    echo '{
+      "mysql": {
+        "host": "127.0.0.1:3306",
+        "user": "semaphore_user",
+        "pass": "'"$SECURE_PASS"'",
+        "name": "semaphore_db"
+      },
+      "dialect": "mysql",
+      "port": "'"$SEMAPHORE_PORT"'",
+      "cookie_hash": "'"$(openssl rand -base64 24)"'",
+      "cookie_encryption": "'"$(openssl rand -base64 24)"'",
+      "access_key_encryption": "'"$(openssl rand -base64 24)"'",
+      "playbook_path": "'"$SEMAPHORE_PLAYBOOKS"'"
+    }' > "$SEMAPHORE_CONF"
+else
+    echo "Configurazione esistente trovata ($SEMAPHORE_CONF). La mantengo."
+fi
 
+# Aggiunta utente admin (ignora errore se esiste già)
 semaphore user add --admin --login "$SEMAPHORE_USER" \
  --name "$SEMAPHORE_USER" \
  --email "$SEMAPHORE_EMAIL" \
  --password "$SECURE_PASS" \
- --config "$SEMAPHORE_CONF"
+ --config "$SEMAPHORE_CONF" || echo "Nota: Utente admin potrebbe già esistere, continuo."
 
 cat <<EOF > /etc/systemd/system/semaphore.service
 [Unit]
@@ -194,28 +223,29 @@ EOF
 
 systemctl daemon-reload
 systemctl enable --now semaphore.service
+# Riavvia nel caso fosse un aggiornamento
+systemctl restart semaphore.service
 
 # === NGINX con Certificato Self-Signed ===
 echo
-echo "Creazione certificato self-signed per nginx..."
+echo "Configurazione Nginx..."
 NGINX_CERT_DIR="/etc/nginx/certs"
 NGINX_KEY="$NGINX_CERT_DIR/semaphore.key"
 NGINX_CRT="$NGINX_CERT_DIR/semaphore.crt"
 
 mkdir -p "$NGINX_CERT_DIR"
 
-# Genera chiave privata e certificato self-signed
-openssl req -x509 -newkey rsa:4096 -keyout "$NGINX_KEY" -out "$NGINX_CRT" \
-  -days 365 -nodes \
-  -subj "/C=$CERT_COUNTRY/ST=$CERT_STATE/L=$CERT_CITY/O=$CERT_ORG/CN=$NGINX_DOMAIN"
-
-chmod 600 "$NGINX_KEY"
-chmod 644 "$NGINX_CRT"
-
-echo "✓ Certificato creato:"
-echo "  Chiave: $NGINX_KEY"
-echo "  Certificato: $NGINX_CRT"
-echo "  Dominio: $NGINX_DOMAIN"
+# Genera certificato SOLO se non esiste
+if [[ ! -f "$NGINX_KEY" || ! -f "$NGINX_CRT" ]]; then
+    echo "Creazione certificato self-signed..."
+    openssl req -x509 -newkey rsa:4096 -keyout "$NGINX_KEY" -out "$NGINX_CRT" \
+      -days 365 -nodes \
+      -subj "/C=$CERT_COUNTRY/ST=$CERT_STATE/L=$CERT_CITY/O=$CERT_ORG/CN=$NGINX_DOMAIN"
+    chmod 600 "$NGINX_KEY"
+    chmod 644 "$NGINX_CRT"
+else
+    echo "Certificati SSL esistenti trovati. Li mantengo."
+fi
 
 # Disabilita default site
 rm -f /etc/nginx/sites-enabled/default
@@ -279,6 +309,7 @@ ln -sf /etc/nginx/sites-available/semaphore-http /etc/nginx/sites-enabled/
 if nginx -t; then
     echo "✓ Configurazione nginx valida"
     systemctl enable --now nginx
+    systemctl reload nginx
 else
     echo "✗ Errore nella configurazione nginx - Verifica il file"
     exit 1
@@ -300,39 +331,41 @@ chmod 700 /root/.ssh
 
 EBIT_PUB_KEY="/home/ebit/.ssh/id_rsa.pub"
 
-read -rp "Quanti host vuoi configurare? " NUM_HOST
-if ! [[ "$NUM_HOST" =~ ^[0-9]+$ ]] || [ "$NUM_HOST" -le 0 ]; then
-    echo "Numero di host non valido."
-    exit 1
+read -rp "Quanti host vuoi configurare? (Inserisci 0 per saltare) " NUM_HOST
+if ! [[ "$NUM_HOST" =~ ^[0-9]+$ ]]; then
+    echo "Numero non valido, salto configurazione host."
+    NUM_HOST=0
 fi
 
-declare -a HOSTS
-for (( i=1; i<=NUM_HOST; i++ )); do
-    read -rp "Host #$i (es. 10.31.0.46): " H
-    HOSTS+=("$H")
-done
+if [ "$NUM_HOST" -gt 0 ]; then
+    declare -a HOSTS
+    for (( i=1; i<=NUM_HOST; i++ )); do
+        read -rp "Host #$i (es. 10.31.0.46): " H
+        HOSTS+=("$H")
+    done
 
-read -rp "Utente remoto sugli host (default: ebit): " REMOTE_USER
-REMOTE_USER=${REMOTE_USER:-ebit}
+    read -rp "Utente remoto sugli host (default: ebit): " REMOTE_USER
+    REMOTE_USER=${REMOTE_USER:-ebit}
 
-read -srp "Password di $REMOTE_USER sugli host: " REMOTE_PASS
-echo
+    read -srp "Password di $REMOTE_USER sugli host: " REMOTE_PASS
+    echo
 
-echo "Verrà copiata la chiave su:"
-printf " - %s\n" "${HOSTS[@]}"
-echo
-read -rp "Confermi? [s/N] " C
-[[ "$C" != "s" && "$C" != "S" ]] && exit 0
-
-for H in "${HOSTS[@]}"; do
-    echo ">>> Copia chiave su $H"
-    TARGET="$REMOTE_USER@$H"
-    sshpass -p "$REMOTE_PASS" ssh-copy-id -i "$EBIT_PUB_KEY" -o StrictHostKeyChecking=no "$TARGET"
-done
+    echo "Verrà copiata la chiave su:"
+    printf " - %s\n" "${HOSTS[@]}"
+    echo
+    read -rp "Confermi? [s/N] " C
+    if [[ "$C" == "s" || "$C" == "S" ]]; then
+        for H in "${HOSTS[@]}"; do
+            echo ">>> Copia chiave su $H"
+            TARGET="$REMOTE_USER@$H"
+            sshpass -p "$REMOTE_PASS" ssh-copy-id -i "$EBIT_PUB_KEY" -o StrictHostKeyChecking=no "$TARGET"
+        done
+    fi
+fi
 
 echo
 echo "╔════════════════════════════════════════════════════════════════╗"
-echo "║               INSTALLAZIONE COMPLETATA CON SUCCESSO!           ║"
+echo "║      INSTALLAZIONE/AGGIORNAMENTO COMPLETATO CON SUCCESSO!      ║"
 echo "╚════════════════════════════════════════════════════════════════╝"
 echo
 echo "Accesso a Semaphore UI:"
