@@ -381,3 +381,7 @@ echo
 echo "NOTA: accettare l'avviso del certificato self-signed nel browser"
 echo "      In alternativa generare un certificato firmato da CA attendibile"
 echo
+echo "Chiave pubblica da riportare sui vari nodi in authorized_keys:"
+echo "-------------------------------------------"
+echo "$EBIT_PUB_KEY"
+

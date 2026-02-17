@@ -2,7 +2,9 @@ local-hostname: bastion
 network:
   version: 2
   ethernets:
-    ens33:
+    primary:
+      match:
+        name: "e*"
       dhcp4: false
       addresses: [192.168.1.100/24]
       gateway4: 192.168.1.1
