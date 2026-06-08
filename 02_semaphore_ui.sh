@@ -88,7 +88,8 @@ DEBIAN_FRONTEND=noninteractive apt full-upgrade -yq
 DEBIAN_FRONTEND=noninteractive apt install -y \
  ansible qemu-guest-agent vim curl sshpass openssh-server git \
  tar xz-utils wget gnupg openssl vim sudo expect tmux tinyproxy \
- nginx mariadb-server
+ nginx mariadb-server \
+ python3-proxmoxer
 
 # Config Vim minimal
 cat <<EOF > /etc/vim/vimrc.local
