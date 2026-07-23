@@ -88,7 +88,9 @@ DEBIAN_FRONTEND=noninteractive apt full-upgrade -yq
 DEBIAN_FRONTEND=noninteractive apt install -y \
  ansible qemu-guest-agent vim curl sshpass openssh-server git \
  tar xz-utils wget gnupg openssl vim sudo expect tmux tinyproxy \
- nginx mariadb-server python3-lxml
+ nginx mariadb-server \
+ python3-proxmoxer \
+ python3-lxml
 
 # Config Vim minimal
 cat <<EOF > /etc/vim/vimrc.local
@@ -318,8 +320,9 @@ fi
 apt clean
 
 # === Generazione chiave SSH per ebit ===
-if [[ ! -f /home/ebit/.ssh/id_rsa ]]; then
-  su - ebit -c 'ssh-keygen -t rsa -b 4096 -f ~/.ssh/id_rsa -N ""'
+# Usiamo ed25519 invece di rsa per maggiore sicurezza ed efficienza
+if [[ ! -f /home/ebit/.ssh/id_ed25519 ]]; then
+  su - ebit -c 'ssh-keygen -t ed25519 -f ~/.ssh/id_ed25519 -N ""'
 fi
 
 # === Copia chiavi SSH multi-host ===
@@ -329,7 +332,8 @@ echo "Copia e autorizza la chiave pubblica di ebit sui server..."
 mkdir -p /root/.ssh
 chmod 700 /root/.ssh
 
-EBIT_PUB_KEY="/home/ebit/.ssh/id_rsa.pub"
+# Il percorso ora punta alla nuova chiave pubblica .pub
+EBIT_PUB_KEY="/home/ebit/.ssh/id_ed25519.pub"
 
 read -rp "Quanti host vuoi configurare? (Inserisci 0 per saltare) " NUM_HOST
 if ! [[ "$NUM_HOST" =~ ^[0-9]+$ ]]; then
