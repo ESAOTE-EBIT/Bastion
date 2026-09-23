@@ -20,6 +20,7 @@ write_files:
     content: |
       Benvenuto ebit
 runcmd:
-  - chown ebit:ebit /home/ebit
+  - chown -R ebit:ebit /home/ebit
   - echo "Configurazione completata"
+  - sleep 10
 
