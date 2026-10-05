@@ -1,5 +1,19 @@
 #cloud-config
 hostname: bastion
+
+# 1. Impostazione Timezone e NTP con chrony
+timezone: Europe/Rome
+
+ntp:
+  enabled: true
+  ntp_client: chrony
+  servers:
+    - ntp1.inrim.it
+    - ntp2.inrim.it
+    - ntp.garr.it
+  pools:
+    - it.pool.ntp.org
+
 users:
   - name: ebit
     sudo: ALL=(ALL) NOPASSWD:ALL
@@ -9,18 +23,25 @@ users:
       - ssh-ed25519 CHIAVE_SSH_PUBBLICA
     passwd: PASSWORD_UTENTE_SHA512
     lock_passwd: false
+
 ssh_pwauth: true
+
 packages:
   - htop
   - curl
   - tmux
   - open-vm-tools
+  - chrony
+
 write_files:
   - path: /home/ebit/welcome.txt
     content: |
       Benvenuto ebit
+
 runcmd:
   - chown -R ebit:ebit /home/ebit
+  # Disabilita il TimeSync di VMware per evitare sovrapposizioni con chrony
+  - command -v vmware-toolbox-cmd >/dev/null 2>&1 && vmware-toolbox-cmd timesync disable
+  - systemctl restart chrony
   - echo "Configurazione completata"
   - sleep 10
-
